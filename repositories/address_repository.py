@@ -51,3 +51,11 @@ def modify_address_by_id(address_id: int, data: UpdateAddress) -> Optional[Addre
         )
 
     return select_address_by_id(address_id)
+
+
+def remove_address_by_id(address_id: int) -> bool:
+    with get_db() as conn:
+        cursor = conn.execute(
+            "DELETE FROM address WHERE id = ?", (address_id,)
+        )
+        return cursor.rowcount > 0
