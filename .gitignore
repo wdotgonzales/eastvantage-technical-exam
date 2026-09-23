@@ -32,3 +32,8 @@ Thumbs.db
 build/
 dist/
 *.egg-info/
+
+# SQLs
+*.db
+*.sqlite
+*.sqlite3
