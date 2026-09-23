@@ -5,11 +5,14 @@
 
 ```bash
 git clone https://github.com/wdotgonzales/eastvantage-technical-exam.git
+```
 
+**2. Go to its directory**
+```bash
 cd eastvantage-technical-exam
 ```
 
-**2. Create the Virtual Environment**
+**3. Create the Virtual Environment**
 
 
 
@@ -26,7 +29,7 @@ python3 -m venv venv
 
 
 
-**3. Activate the Virtual Environment**
+**4. Activate the Virtual Environment**
 
 Use the command for your terminal.
 
@@ -54,13 +57,13 @@ venv\Scripts\activate.bat
 venv\Scripts\Activate.ps1
 ```
 
-**4. Install Dependencies**
+**5. Install Dependencies**
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**5. Run server**
+**6. Run server**
 ```bash
 fastapi dev main.py
 ```
@@ -68,6 +71,3 @@ fastapi dev main.py
 Server started at http://127.0.0.1:8000
 
 Documentation at http://127.0.0.1:8000/docs
-
-
----
