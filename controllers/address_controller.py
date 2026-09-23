@@ -1,11 +1,19 @@
 '''address_controller.py'''
+import logging
 from fastapi import APIRouter, Query
-from typing import Optional
-from models.address_model import Address, CreateAddress, UpdateAddress
-from repositories.address_repository import insert_address, select_address_by_id, modify_address_by_id, remove_address_by_id, find_addresses_near
+from models.address_model import CreateAddress, UpdateAddress
+from repositories.address_repository import (
+    insert_address,
+    select_address_by_id,
+    modify_address_by_id,
+    remove_address_by_id,
+    find_addresses_near,
+)
 from utilities.api_response_format import api_response_format
 
 router = APIRouter(prefix="/address", tags=["Address"])
+logger = logging.getLogger(__name__)
+
 
 @router.post("/", status_code=201)
 def create_address(address: CreateAddress):
@@ -17,6 +25,7 @@ def create_address(address: CreateAddress):
             status_code=201,
         )
     except Exception as e:
+        logger.error(f"Failed to create address: {e}", exc_info=True)
         return api_response_format(message=str(e), status_code=500)
 
 
@@ -33,6 +42,7 @@ def get_address_by_id(address_id: int):
             status_code=200,
         )
     except Exception as e:
+        logger.error(f"Failed to retrieve address id={address_id}: {e}", exc_info=True)
         return api_response_format(message=str(e), status_code=500)
 
 
@@ -49,6 +59,7 @@ def update_address_by_id(address_id: int, address: UpdateAddress):
             status_code=200,
         )
     except Exception as e:
+        logger.error(f"Failed to update address id={address_id}: {e}", exc_info=True)
         return api_response_format(message=str(e), status_code=500)
 
 
@@ -64,6 +75,7 @@ def delete_address_by_id(address_id: int):
             status_code=200,
         )
     except Exception as e:
+        logger.error(f"Failed to delete address id={address_id}: {e}", exc_info=True)
         return api_response_format(message=str(e), status_code=500)
 
 
@@ -81,4 +93,5 @@ def get_addresses_near(
             status_code=200,
         )
     except Exception as e:
+        logger.error(f"Failed to search addresses: {e}", exc_info=True)
         return api_response_format(message=str(e), status_code=500)

@@ -1,8 +1,12 @@
 '''address_repository.py'''
+import logging
 from typing import List, Optional
 from db.database import get_db
 from models.address_model import Address, CreateAddress, UpdateAddress
 import math
+
+logger = logging.getLogger(__name__)
+
 
 def insert_address(data: CreateAddress) -> Address:
     with get_db() as conn:
@@ -25,6 +29,7 @@ def insert_address(data: CreateAddress) -> Address:
         )
         address_id = cursor.lastrowid
 
+    logger.info(f"Inserted address id={address_id}")
     return select_address_by_id(address_id)
 
 
@@ -33,13 +38,18 @@ def select_address_by_id(address_id: int) -> Optional[Address]:
         row = conn.execute(
             "SELECT * FROM address WHERE id = ?", (address_id,)
         ).fetchone()
-        
-        return Address.map(dict(row)) if row else None
+
+        if not row:
+            logger.warning(f"Address id={address_id} not found")
+            return None
+
+        return Address.map(dict(row))
 
 
 def modify_address_by_id(address_id: int, data: UpdateAddress) -> Optional[Address]:
     update_data = data.model_dump(exclude_unset=True)
     if not update_data:
+        logger.info(f"No fields to update for address id={address_id}, skipping write")
         return select_address_by_id(address_id)
 
     set_clause = ", ".join(f"{key} = ?" for key in update_data.keys())
@@ -51,6 +61,7 @@ def modify_address_by_id(address_id: int, data: UpdateAddress) -> Optional[Addre
             values,
         )
 
+    logger.info(f"Updated address id={address_id}, fields={list(update_data.keys())}")
     return select_address_by_id(address_id)
 
 
@@ -59,7 +70,14 @@ def remove_address_by_id(address_id: int) -> bool:
         cursor = conn.execute(
             "DELETE FROM address WHERE id = ?", (address_id,)
         )
-        return cursor.rowcount > 0
+        deleted = cursor.rowcount > 0
+
+    if deleted:
+        logger.info(f"Deleted address id={address_id}")
+    else:
+        logger.warning(f"Attempted to delete non-existent address id={address_id}")
+
+    return deleted
 
 
 def find_addresses_near(latitude: float, longitude: float, distance_km: float) -> List[Address]:
@@ -82,6 +100,10 @@ def find_addresses_near(latitude: float, longitude: float, distance_km: float) -
             results.append(Address.map(row_dict))
 
     results.sort(key=lambda a: a.distance_km)
+    logger.info(
+        f"Search near ({latitude}, {longitude}) within {distance_km}km "
+        f"found {len(results)} of {len(rows)} addresses"
+    )
     return results
 
 
