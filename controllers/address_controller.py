@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Query
 from typing import Optional
 from models.address_model import Address, CreateAddress, UpdateAddress
-from repositories.address_repository import insert_address, select_address_by_id, modify_address_by_id, remove_address_by_id
+from repositories.address_repository import insert_address, select_address_by_id, modify_address_by_id, remove_address_by_id, find_addresses_near
 from utilities.api_response_format import api_response_format
 
 router = APIRouter(prefix="/address", tags=["Address"])
@@ -61,6 +61,23 @@ def delete_address_by_id(address_id: int):
 
         return api_response_format(
             message="Address deleted successfully",
+            status_code=200,
+        )
+    except Exception as e:
+        return api_response_format(message=str(e), status_code=500)
+
+
+@router.get("/")
+def get_addresses_near(
+    latitude: float = Query(..., ge=-90, le=90),
+    longitude: float = Query(..., ge=-180, le=180),
+    distance: float = Query(..., gt=0, description="Search radius in kilometers"),
+):
+    try:
+        addresses = find_addresses_near(latitude, longitude, distance)
+        return api_response_format(
+            message="Addresses retrieved successfully",
+            data={"addresses": [a.serialize() for a in addresses]},
             status_code=200,
         )
     except Exception as e:

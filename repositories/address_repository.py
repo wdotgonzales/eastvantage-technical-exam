@@ -60,3 +60,41 @@ def remove_address_by_id(address_id: int) -> bool:
             "DELETE FROM address WHERE id = ?", (address_id,)
         )
         return cursor.rowcount > 0
+
+
+def find_addresses_near(latitude: float, longitude: float, distance_km: float) -> List[Address]:
+    '''
+    Go through every address in the database and check how far away
+    it is from the given latitude/longitude using the haversine
+    formula below. If it's close enough (within distance_km), we
+    keep it and remember how far it is. This is basically a
+    "find things near me" search.
+    '''
+    with get_db() as conn:
+        rows = conn.execute("SELECT * FROM address").fetchall()
+
+    results = []
+    for row in rows:
+        row_dict = dict(row)
+        d = _haversine_km(latitude, longitude, row_dict["latitude"], row_dict["longitude"])
+        if d <= distance_km:
+            row_dict["distance_km"] = round(d, 2)
+            results.append(Address.map(row_dict))
+
+    results.sort(key=lambda a: a.distance_km)
+    return results
+
+
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    '''
+    Works out the distance in km between two points on Earth.
+    We can't just use normal straight-line math because the Earth
+    is round, not flat, so this formula bends the "ruler" to match
+    the curve of the planet.
+    '''
+    R = 6371  # Earth's radius in km
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    d_phi = math.radians(lat2 - lat1)
+    d_lambda = math.radians(lon2 - lon1)
+    a = math.sin(d_phi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2) ** 2
+    return 2 * R * math.asin(math.sqrt(a))
