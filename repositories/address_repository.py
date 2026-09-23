@@ -82,14 +82,25 @@ def remove_address_by_id(address_id: int) -> bool:
 
 def find_addresses_near(latitude: float, longitude: float, distance_km: float) -> List[Address]:
     '''
-    Go through every address in the database and check how far away
-    it is from the given latitude/longitude using the haversine
-    formula below. If it's close enough (within distance_km), we
-    keep it and remember how far it is. This is basically a
-    "find things near me" search.
+    Uses a bounding-box pre-filter in SQL to cut down the candidate set,
+    then applies the precise haversine formula only to rows inside that
+    box.
     '''
+    lat_delta = distance_km / 111.0  # ~111km per degree latitude, constant
+    lon_delta = distance_km / (111.0 * math.cos(math.radians(latitude)) or 1e-9)
+
+    min_lat, max_lat = latitude - lat_delta, latitude + lat_delta
+    min_lon, max_lon = longitude - lon_delta, longitude + lon_delta
+
     with get_db() as conn:
-        rows = conn.execute("SELECT * FROM address").fetchall()
+        rows = conn.execute(
+            """
+            SELECT * FROM address
+            WHERE latitude BETWEEN ? AND ?
+            AND longitude BETWEEN ? AND ?
+            """,
+            (min_lat, max_lat, min_lon, max_lon),
+        ).fetchall()
 
     results = []
     for row in rows:
@@ -102,7 +113,7 @@ def find_addresses_near(latitude: float, longitude: float, distance_km: float) -
     results.sort(key=lambda a: a.distance_km)
     logger.info(
         f"Search near ({latitude}, {longitude}) within {distance_km}km "
-        f"found {len(results)} of {len(rows)} addresses"
+        f"found {len(results)} of {len(rows)} candidates in bounding box"
     )
     return results
 
